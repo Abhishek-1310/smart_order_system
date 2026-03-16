@@ -1,0 +1,22 @@
+{
+  "name": "smart-order-infrastructure",
+  "version": "1.0.0",
+  "description": "AWS CDK Infrastructure for Smart Order System",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy --all",
+    "destroy": "cdk destroy --all"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.120.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "typescript": "^5.3.3",
+    "aws-cdk": "^2.120.0"
+  }
+}

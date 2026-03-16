@@ -1,0 +1,92 @@
+# ============================================================
+# GitHub Actions: Auto-Deploy Smart Order System to AWS
+# ============================================================
+#
+# Triggers on every push to 'main' branch.
+# Builds backend → Deploys CDK stack → All automatic!
+#
+# Required GitHub Secrets (set in repo Settings → Secrets → Actions):
+#   AWS_ACCESS_KEY_ID      — Your AWS Access Key ID
+#   AWS_SECRET_ACCESS_KEY  — Your AWS Secret Access Key
+#   AWS_REGION             — e.g., ap-south-1
+# ============================================================
+
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+
+# Prevent concurrent deployments
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout code ─────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Node.js ─────────────────────────────────
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            infrastructure/package-lock.json
+
+      # ── 3. Install dependencies ──────────────────────────
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+
+      - name: Install infrastructure dependencies
+        run: cd infrastructure && npm ci
+
+      # ── 4. Build backend ─────────────────────────────────
+      - name: Build backend (TypeScript → JavaScript)
+        run: cd backend && npm run build
+
+      # ── 5. Configure AWS credentials ─────────────────────
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # ── 6. Install CDK ───────────────────────────────────
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      # ── 7. CDK Bootstrap (idempotent — safe to run every time)
+      - name: CDK Bootstrap
+        run: cd infrastructure && npx cdk bootstrap
+
+      # ── 8. Deploy stack ──────────────────────────────────
+      - name: CDK Deploy
+        run: cd infrastructure && npx cdk deploy SmartOrderStack --require-approval never --outputs-file cdk-outputs.json
+
+      # ── 9. Print outputs ─────────────────────────────────
+      - name: Show deployment outputs
+        run: |
+          echo "✅ Deployment successful!"
+          echo ""
+          echo "📋 Stack Outputs:"
+          cat infrastructure/cdk-outputs.json | python3 -m json.tool
+
+      # ── 10. Upload outputs as artifact ────────────────────
+      - name: Upload CDK outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdk-outputs
+          path: infrastructure/cdk-outputs.json
+          retention-days: 30
