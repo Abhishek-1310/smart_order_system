@@ -63,9 +63,24 @@ export const handler = async (
       return badRequest('Amount exceeds maximum allowed value');
     }
 
+    if (!body.product_name || typeof body.product_name !== 'string' || !body.product_name.trim()) {
+      return badRequest('Product name is required');
+    }
+
+    if (!body.quantity || typeof body.quantity !== 'number' || body.quantity <= 0) {
+      return badRequest('Quantity must be a positive number');
+    }
+
     // ── 3. Create order in DynamoDB ─────────────────────────
     const orderId = uuidv4();
-    const order = await createOrder(orderId, userId, body.amount);
+    const order = await createOrder(
+      orderId,
+      userId,
+      body.amount,
+      body.product_name.trim(),
+      body.quantity,
+      body.description?.trim()
+    );
 
     logger.info('Order stored in database', { orderId, userId, amount: body.amount });
 
@@ -87,6 +102,9 @@ export const handler = async (
     return created(
       {
         orderId: order.id,
+        product_name: order.product_name,
+        quantity: order.quantity,
+        description: order.description,
         amount: order.amount,
         status: order.status,
         createdAt: order.created_at,
@@ -97,4 +115,4 @@ export const handler = async (
     logger.error('CreateOrder failed', { error: String(error) });
     return serverError('Failed to create order. Please try again.');
   }
-};
+}; 
