@@ -44,7 +44,10 @@ function getTableName(): string {
 export async function createOrder(
   id: string,
   userId: string,
-  amount: number
+  amount: number,
+  productName: string,
+  quantity: number,
+  description?: string
 ): Promise<Order> {
   const db = getClient();
   const now = new Date().toISOString();
@@ -52,6 +55,9 @@ export async function createOrder(
   const order: Order = {
     id,
     user_id: userId,
+    product_name: productName,
+    quantity,
+    description,
     amount,
     status: OrderStatus.PENDING,
     created_at: now,

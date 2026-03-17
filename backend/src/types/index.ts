@@ -13,6 +13,9 @@ export enum OrderStatus {
 export interface Order {
   id: string;
   user_id: string;
+  product_name: string;
+  quantity: number;
+  description?: string;
   amount: number;
   status: OrderStatus;
   created_at: string;
@@ -20,6 +23,9 @@ export interface Order {
 
 /** Create order request body */
 export interface CreateOrderRequest {
+  product_name: string;
+  quantity: number;
+  description?: string;
   amount: number;
   items?: OrderItem[];
 }

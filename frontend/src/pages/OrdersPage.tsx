@@ -16,7 +16,6 @@ import {
   Send,
   Database,
   Zap,
-  AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -27,6 +26,9 @@ export default function OrdersPage() {
   const [dataSource, setDataSource] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newAmount, setNewAmount] = useState('');
+  const [newProductName, setNewProductName] = useState('');
+  const [newQuantity, setNewQuantity] = useState('1');
+  const [newDescription, setNewDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -57,6 +59,17 @@ export default function OrdersPage() {
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(newAmount);
+    const quantity = parseInt(newQuantity);
+
+    if (!newProductName.trim()) {
+      toast.error('Please enter a product name');
+      return;
+    }
+
+    if (isNaN(quantity) || quantity <= 0) {
+      toast.error('Please enter a valid quantity');
+      return;
+    }
 
     if (isNaN(amount) || amount <= 0) {
       toast.error('Please enter a valid amount');
@@ -70,11 +83,18 @@ export default function OrdersPage() {
 
     setCreating(true);
     try {
-      const response = await createOrder({ amount });
+      const response = await createOrder({
+        product_name: newProductName.trim(),
+        quantity,
+        description: newDescription.trim() || undefined,
+        amount,
+      });
       toast.success(`Order created! ID: ${response.data.orderId.slice(0, 8)}...`);
       setShowCreateModal(false);
       setNewAmount('');
-      // Refresh orders list
+      setNewProductName('');
+      setNewQuantity('1');
+      setNewDescription('');
       await fetchOrders();
     } catch (err: unknown) {
       const message =
@@ -107,11 +127,10 @@ export default function OrdersPage() {
           {/* Data source badge */}
           {dataSource && (
             <div
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-                dataSource === 'cache'
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${dataSource === 'cache'
                   ? 'bg-green-50 text-green-700 border border-green-200'
                   : 'bg-blue-50 text-blue-700 border border-blue-200'
-              }`}
+                }`}
             >
               {dataSource === 'cache' ? (
                 <Zap className="w-3 h-3" />
@@ -122,8 +141,8 @@ export default function OrdersPage() {
                 {dataSource === 'cache'
                   ? 'From Cache'
                   : dataSource === 'database'
-                  ? 'From Database'
-                  : 'Demo Mode'}
+                    ? 'From Database'
+                    : 'Demo Mode'}
               </span>
             </div>
           )}
@@ -172,10 +191,12 @@ export default function OrdersPage() {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-            <div className="col-span-4">Order ID</div>
+            <div className="col-span-3">Order ID</div>
+            <div className="col-span-2">Product</div>
+            <div className="col-span-1">Qty</div>
             <div className="col-span-2">Amount</div>
             <div className="col-span-2">Status</div>
-            <div className="col-span-4">Created At</div>
+            <div className="col-span-2">Created At</div>
           </div>
 
           {/* Table Rows */}
@@ -186,7 +207,7 @@ export default function OrdersPage() {
                 className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors animate-slide-up"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="col-span-4 flex items-center space-x-3">
+                <div className="col-span-3 flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
                     <ShoppingBag className="w-4 h-4 text-blue-600" />
                   </div>
@@ -200,6 +221,17 @@ export default function OrdersPage() {
                   </div>
                 </div>
                 <div className="col-span-2 flex items-center">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{order.product_name}</p>
+                    {order.description && (
+                      <p className="text-xs text-gray-400">{order.description}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="col-span-1 flex items-center">
+                  <span className="text-sm text-gray-700">{order.quantity}</span>
+                </div>
+                <div className="col-span-2 flex items-center">
                   <span className="text-sm font-semibold text-gray-900">
                     ${order.amount.toFixed(2)}
                   </span>
@@ -207,14 +239,13 @@ export default function OrdersPage() {
                 <div className="col-span-2 flex items-center">
                   <StatusBadge status={order.status} />
                 </div>
-                <div className="col-span-4 flex items-center text-sm text-gray-500">
+                <div className="col-span-2 flex items-center text-sm text-gray-500">
                   {new Date(order.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit',
-                    second: '2-digit',
                   })}
                 </div>
               </div>
@@ -251,10 +282,43 @@ export default function OrdersPage() {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleCreateOrder} className="p-6">
-              <div className="mb-6">
+            <form onSubmit={handleCreateOrder} className="p-6 space-y-4">
+              {/* Product Name */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Order Amount ($)
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  value={newProductName}
+                  onChange={(e) => setNewProductName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="e.g. iPhone 15, Office Chair"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              {/* Quantity */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quantity *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newQuantity}
+                  onChange={(e) => setNewQuantity(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="1"
+                  required
+                />
+              </div>
+
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Order Amount ($) *
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -265,35 +329,39 @@ export default function OrdersPage() {
                     max="999999.99"
                     value={newAmount}
                     onChange={(e) => setNewAmount(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     placeholder="0.00"
                     required
-                    autoFocus
                   />
                 </div>
               </div>
 
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                  placeholder="Any additional details about this order..."
+                  rows={2}
+                />
+              </div>
+
               {/* Flow explanation */}
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+              <div className="p-4 bg-blue-50 rounded-lg">
                 <h4 className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-2">
                   What happens next
                 </h4>
                 <ol className="text-xs text-blue-600 space-y-1">
-                  <li>1. Order saved to RDS MySQL (status: PENDING)</li>
+                  <li>1. Order saved to DynamoDB (status: PENDING)</li>
                   <li>2. Message sent to SQS for async processing</li>
                   <li>3. Worker Lambda processes payment</li>
                   <li>4. Status updated to COMPLETED</li>
                   <li>5. SNS sends email notification</li>
                 </ol>
-              </div>
-
-              {/* Warning for demo */}
-              <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start space-x-2">
-                <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-yellow-700">
-                  Ensure the backend is deployed via CDK before creating orders.
-                  See the project notes for deployment instructions.
-                </p>
               </div>
 
               {/* Actions */}

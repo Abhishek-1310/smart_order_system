@@ -5,12 +5,18 @@
 export interface Order {
   id: string;
   user_id: string;
+  product_name: string;
+  quantity: number;
+  description?: string;
   amount: number;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
   created_at: string;
 }
 
 export interface CreateOrderPayload {
+  product_name: string;
+  quantity: number;
+  description?: string;
   amount: number;
 }
 
