@@ -188,7 +188,9 @@ GSI: StatusDateIndex
 **Request:**
 ```json
 {
-  "amount": 99.99
+  "amount": 99.99,
+  "descrption":"....",
+  "name":"...."
 }
 ```
 
@@ -303,16 +305,6 @@ User navigates to Orders page
 
 ---
 
-## 💰 Cost Comparison: Before vs After
-
-| Service | Before (RDS/Redis) | After (DynamoDB) |
-|---------|-------------------|------------------|
-| Database | RDS t3.micro: ~$15/mo | DynamoDB: **$0** (free tier) |
-| Cache | ElastiCache t3.micro: ~$12/mo | In-memory Map: **$0** |
-| Networking | NAT Gateway: ~$32/mo | No VPC: **$0** |
-| Lambda | Same | Same ($0) |
-| **Total** | **~$59/month** | **$0/month** |
-
 ---
 
 ## 🏃 Quick Start Commands
@@ -351,7 +343,6 @@ npx cdk destroy SmartOrderStack
 ## 📚 What I Learned Building This
 
 1. **DynamoDB is perfect for serverless** — no VPC, no connection pooling, pay-per-request
-2. **VPC is expensive** — NAT Gateway alone costs $32/month; avoid VPC unless required
 3. **In-memory cache works for Lambda** — warm starts reuse the cache, cold starts are fast enough
 4. **GSI design matters** — StatusDateIndex enables efficient daily summary queries
 5. **Cache-aside still works** — Even with in-memory cache, the pattern (check → miss → query → store) is valid
@@ -359,7 +350,6 @@ npx cdk destroy SmartOrderStack
 7. **Structured logging** — JSON logs make CloudWatch Insights queries much easier
 8. **CDK > CloudFormation** — Writing infra in TypeScript is far more readable and maintainable
 9. **Cognito integration** — API Gateway handles JWT validation automatically, no code needed in Lambda
-10. **Free tier is powerful** — You can build a complete production-grade system for $0/month
 
 ---
 
