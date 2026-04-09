@@ -287,15 +287,16 @@ export class SmartOrderStack extends cdk.Stack {
     // ================================================================
     // 8. EventBridge — Scheduled Daily Summary (FREE)
     // ================================================================
+    // ================================================================
+    // 8. EventBridge — Scheduled Weekly Summary (FREE)
+    // ================================================================
     const dailySummaryRule = new events.Rule(this, 'DailySummaryRule', {
-      ruleName: 'smart-order-daily-summary',
-      description: 'Triggers daily order summary at 8 PM UTC',
+      ruleName: 'smart-order-weekly-summary',
+      description: 'Triggers weekly order summary every Sunday at 8 PM UTC',
       schedule: events.Schedule.cron({
         minute: '0',
         hour: '20',
-        day: '*',
-        month: '*',
-        year: '*',
+        weekDay: '0', // 0 = Sunday
       }),
     });
 
